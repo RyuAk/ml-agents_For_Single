@@ -14,10 +14,6 @@ GameObject:
   - component: {fileID: 457180499887786254}
   - component: {fileID: 2601494161408734346}
   - component: {fileID: 8428819792665695506}
-  - component: {fileID: 4686841948835574490}
-  - component: {fileID: 8999307534203150375}
-  - component: {fileID: 1277570177541355998}
-  - component: {fileID: 6908437748358442033}
   m_Layer: 0
   m_Name: Player3
   m_TagString: Untagged
@@ -123,6 +119,7 @@ MonoBehaviour:
   isPlayerTurn: 0
   hasMoved: 0
   movesLeft: 2
+  isArrested: 0
   blockedColor: {r: 1, g: 0, b: 0, a: 1}
   moveColor: {r: 0, g: 1, b: 0, a: 0}
   crashableColor: {r: 1, g: 1, b: 0, a: 1}
@@ -145,83 +142,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
---- !u!114 &4686841948835574490
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 485148786773372762}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ObservedComponentsFoldoutOpen: 1
-  Group: 0
-  prefixField: -1
-  Synchronization: 3
-  OwnershipTransfer: 0
-  observableSearch: 2
-  ObservedComponents:
-  - {fileID: 8999307534203150375}
-  sceneViewId: 0
-  InstantiationId: 0
-  isRuntimeInstantiated: 0
---- !u!114 &8999307534203150375
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 485148786773372762}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 627855c7f81362d41938ffe0b1475957, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_SynchronizePosition: 1
-  m_SynchronizeRotation: 1
-  m_SynchronizeScale: 0
-  m_UseLocal: 1
---- !u!114 &1277570177541355998
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 485148786773372762}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7621da3c1914ad14e8ba8df624a7974b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cardSlots:
-  - {fileID: 0}
-  - {fileID: 0}
---- !u!114 &6908437748358442033
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 485148786773372762}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6266cf5732caa4b47a702a00a9385b5b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  clickableLayer:
-    serializedVersion: 2
-    m_Bits: 1024
-  isPlayerTurn: 0
-  moveLeft: 2
-  blockedColor: {r: 1, g: 0, b: 0, a: 1}
-  moveColor: {r: 0, g: 1, b: 0, a: 0}
-  crashableColor: {r: 1, g: 1, b: 0, a: 1}
-  meteorPrefab: {fileID: 7967090441752921618, guid: 8bfcf10f0f2f84d4bbf92336304117f6,
-    type: 3}
-  meteorParent: {fileID: 0}
 --- !u!1001 &4478560642767163025
 PrefabInstance:
   m_ObjectHideFlags: 0

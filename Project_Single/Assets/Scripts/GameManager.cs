@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Photon.Pun;
 
 public class GameManager : MonoBehaviour
 {
@@ -10,7 +9,9 @@ public class GameManager : MonoBehaviour
     public GameObject currentPlayer;
     public int currentPlayerIndex = 0;
     private bool hasMoved = false;
-
+    public Tile[,] tileGrid; // 10x10 보드를 나타내는 2D 배열
+    public int boardWidth = 10;
+    public int boardHeight = 10;
 
     void Awake()
     {
@@ -24,12 +25,48 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void Start()
-    { 
-         CardManager.instance.DistributeCards(players);
-         StartPlayerTurn();
+    public void Start()
+    {
+        InitializeTileGrid();
 
+        // PlayerAgent에 tileGrid 할당
+        foreach (var player in FindObjectsOfType<PlayerAgent>())
+        {
+            player.tileGrid = tileGrid;
+        }
+        StartPlayerTurn();
     }
+
+    private void InitializeTileGrid()
+    {
+        tileGrid = new Tile[boardWidth, boardHeight];
+
+        // "Tile" 태그가 붙어 있는 모든 오브젝트 찾기
+        GameObject[] tileObjects = GameObject.FindGameObjectsWithTag("tile");
+
+        foreach (GameObject tileObject in tileObjects)
+        {
+            Tile tile = tileObject.GetComponent<Tile>();
+
+            if (tile != null)
+            {
+                // 타일의 좌표를 이용해 2D 배열에 저장
+                if (tile.x >= 0 && tile.x < boardWidth && tile.y >= 0 && tile.y < boardHeight)
+                {
+                    tileGrid[tile.x, tile.y] = tile;
+                }
+                else
+                {
+                    Debug.LogWarning($"타일 ({tile.x}, {tile.y})이 보드 범위를 벗어났습니다.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"GameObject {tileObject.name}에는 Tile 스크립트가 없습니다.");
+            }
+        }
+    }
+    
 
     public void EndTurn()
     {

@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 5433312905699072804}
   - component: {fileID: 5426082251501126404}
   - component: {fileID: 5474433064168030896}
-  - component: {fileID: 88893585826610466}
   - component: {fileID: 2854911795901791936}
   m_Layer: 0
   m_Name: Player1
@@ -101,31 +100,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300036, guid: 7b1ebbee2001ef74887110b41491763f, type: 3}
---- !u!114 &88893585826610466
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5411836517577991396}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5a2bce69531a4cb458bfd25853ac9ad8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  clickableLayer:
-    serializedVersion: 2
-    m_Bits: 1536
-  isPlayerTurn: 0
-  hasMoved: 0
-  movesLeft: 2
-  isArrested: 0
-  blockedColor: {r: 1, g: 0, b: 0, a: 1}
-  moveColor: {r: 0, g: 1, b: 0, a: 0}
-  crashableColor: {r: 1, g: 1, b: 0, a: 1}
-  meteorPrefab: {fileID: 7967090441752921618, guid: 8bfcf10f0f2f84d4bbf92336304117f6,
-    type: 3}
-  meteorParent: {fileID: 0}
 --- !u!54 &2854911795901791936
 Rigidbody:
   m_ObjectHideFlags: 0

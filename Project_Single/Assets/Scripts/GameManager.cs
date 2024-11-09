@@ -3,78 +3,128 @@ using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
-    public List<GameObject> players;
+    public List<PlayerAgent> players;
     public int currentPlayerIndex = 0;
-    private TileManager tileManager;
-    public int boardSize = 10;
+    private bool gameOver = false;
 
     private void Start()
     {
-        tileManager = FindObjectOfType<TileManager>();
         StartGame();
     }
 
     public void StartGame()
     {
-        foreach (GameObject player in players)
+        foreach (var player in players)
         {
-            player.GetComponent<PlayerController>().ResetMove();
-            player.transform.position = GetInitialPosition(player); // 초기 위치로 설정
+            if (player != null)
+            {
+                player.ResetAgent(); // 각 플레이어 에이전트 초기화
+            }
         }
         currentPlayerIndex = 0;
-        Debug.Log("Game started. Current player: " + players[currentPlayerIndex].name);
+        gameOver = false;
+        StartNextTurn();
     }
 
-    public bool IsValidMove(Vector3 position)
+    public void ResetAllPlayers()
     {
-        return position.x >= 0 && position.x < boardSize &&
-               position.z >= 0 && position.z < boardSize &&
-               !tileManager.IsTileDestroyed(position);
-    }
-
-    public bool IsDestructible(Vector3 position)
-    {
-        return IsValidMove(position) && !IsPlayerOnTile(position);
-    }
-
-    public void DestroyTile(Vector3 position)
-    {
-        tileManager.DestroyTile(position);
-    }
-
-    public void EndTurn()
-    {
-        players[currentPlayerIndex].GetComponent<PlayerController>().ResetMove();
-        currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
-        Debug.Log("Turn ended. Next player: " + players[currentPlayerIndex].name);
-        Invoke(nameof(StartNextTurn), 1f);
+        foreach (var player in players)
+        {
+            if (player != null)
+            {
+                player.ResetAgent(); // 각 플레이어 초기화
+            }
+        }
     }
 
     private void StartNextTurn()
     {
-        if (CheckGameOver()) return;
-        Debug.Log("Next turn started. Current player index: " + currentPlayerIndex);
+        if (gameOver) return;
+
+        // 현재 턴의 플레이어 가져오기
+        PlayerAgent currentPlayer = players[currentPlayerIndex];
+
+        // 플레이어가 비활성화되어 있으면 다음 플레이어로 넘어감
+        if (currentPlayer == null || !currentPlayer.gameObject.activeSelf)
+        {
+            MoveToNextPlayer();
+            return;
+        }
+
+        // 플레이어의 턴 시작
+        Debug.Log("Current player turn: " + currentPlayer.gameObject.name);
+        currentPlayer.StartTurn();
     }
 
-    private bool CheckGameOver()
+    public void EndTurn()
     {
-        int activePlayers = players.FindAll(player => player != null).Count;
-        if (activePlayers == 1)
+        MoveToNextPlayer();
+        Invoke(nameof(StartNextTurn), 1f); // 1초 딜레이 후 다음 턴 시작
+    }
+
+    private void MoveToNextPlayer()
+    {
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
+
+        // 남아 있는 플레이어가 한 명인지 확인
+        if (CheckGameOver()) return;
+
+        // 비활성화된 플레이어는 건너뜀
+        while (players[currentPlayerIndex] == null || !players[currentPlayerIndex].gameObject.activeSelf)
         {
-            Debug.Log("Game over! Winner: " + players[currentPlayerIndex].name);
-            Invoke(nameof(RestartGameCycle), 5f);
-            return true;
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
         }
-        return false;
+    }
+
+    public bool IsTileDestroyed(Vector3 position)
+    {
+        // 타일이 존재하지 않거나 비활성화된 경우 true 반환
+        Collider[] colliders = Physics.OverlapSphere(position, 0.1f);
+        foreach (var collider in colliders)
+        {
+            if (collider.CompareTag("tile") && collider.gameObject.activeSelf)
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     public bool IsPlayerOnTile(Vector3 position)
     {
-        foreach (GameObject player in players)
+        // 주어진 위치에 플레이어가 있는지 확인
+        foreach (var player in players)
         {
             if (player != null && Vector3.Distance(player.transform.position, position) < 0.1f)
+            {
                 return true;
+            }
         }
+        return false;
+    }
+
+    private bool CheckGameOver()
+    {
+        int activePlayersCount = 0;
+        PlayerAgent lastPlayer = null;
+
+        foreach (var player in players)
+        {
+            if (player != null && player.gameObject.activeSelf)
+            {
+                activePlayersCount++;
+                lastPlayer = player;
+            }
+        }
+
+        if (activePlayersCount == 1)
+        {
+            gameOver = true;
+            Debug.Log("Game Over! Winner: " + lastPlayer.gameObject.name);
+            Invoke(nameof(RestartGameCycle), 5f); // 5초 후 게임 재시작
+            return true;
+        }
+
         return false;
     }
 
@@ -83,9 +133,8 @@ public class GameManager : MonoBehaviour
         StartGame();
     }
 
-    private Vector3 GetInitialPosition(GameObject player)
+    private PlayerAgent GetWinner()
     {
-        // 각 플레이어의 초기 위치 설정 로직
-        return player.transform.position;
+        return players.Find(player => player != null && player.isActiveAndEnabled);
     }
 }

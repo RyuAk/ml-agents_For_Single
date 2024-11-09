@@ -113,20 +113,26 @@ public class GameManager : MonoBehaviour
             if (player != null && player.gameObject.activeSelf)
             {
                 activePlayersCount++;
-                lastPlayer = player;
+                lastPlayer = player.GetComponent<PlayerAgent>(); // PlayerAgent 컴포넌트 참조
             }
         }
 
-        if (activePlayersCount == 1)
+        if (activePlayersCount == 1 && lastPlayer != null)
         {
             gameOver = true;
             Debug.Log("Game Over! Winner: " + lastPlayer.gameObject.name);
+
+            // 승자에게 큰 보상 부여
+            lastPlayer.AddReward(10.0f); // 예: 10점 보상
+            lastPlayer.EndEpisode(); // 에피소드 종료
+
             Invoke(nameof(RestartGameCycle), 5f); // 5초 후 게임 재시작
             return true;
         }
 
         return false;
     }
+
 
     private void RestartGameCycle()
     {

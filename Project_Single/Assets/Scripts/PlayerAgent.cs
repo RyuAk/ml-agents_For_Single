@@ -7,7 +7,6 @@ public class PlayerAgent : Agent
 {
     private GameManager gameManager;
     private int moveCount;
-    public GameObject meteorPrefab;
 
     public override void Initialize()
     {
@@ -18,108 +17,168 @@ public class PlayerAgent : Agent
     public override void OnEpisodeBegin()
     {
         moveCount = 0;
-        SetInitialPosition(); // 초기 위치 설정
-        Debug.Log("Agent reset to initial position: " + transform.position);
+        SetInitialPosition();
+        Debug.Log("OnEpisodeBegin: " + transform.position);
     }
 
     private void SetInitialPosition()
     {
-        // 각 플레이어의 이름에 따라 초기 위치를 설정
         switch (gameObject.name)
         {
             case "Player1":
-                transform.position = new Vector3(-3.5f, 2f, 3.5f); // Player1의 고정 위치
+                transform.position = new Vector3(-3.5f, 2f, 3.5f);
                 break;
             case "Player2":
-                transform.position = new Vector3(3.5f, 2f, -3.5f); // Player2의 고정 위치
+                transform.position = new Vector3(3.5f, 2f, -3.5f);
                 break;
             case "Player3":
-                transform.position = new Vector3(-3.5f, 2f, -3.5f); // Player3의 고정 위치
+                transform.position = new Vector3(-3.5f, 2f, -3.5f);
                 break;
             case "Player4":
-                transform.position = new Vector3(3.5f, 2f, 3.5f); // Player4의 고정 위치
+                transform.position = new Vector3(3.5f, 2f, 3.5f);
                 break;
         }
-
-        Debug.Log("Agent reset to initial position: " + transform.position);
     }
-
 
     public void ResetAgent()
     {
-        // 초기 위치로 설정하거나 초기화 작업 수행
-        SetInitialPosition(); // 이미 있는 메서드 사용
-        moveCount = 0; // 이동 횟수 초기화
-        Debug.Log("Agent reset to initial position: " + transform.position);
+        SetInitialPosition();
+        moveCount = 0;
+        Debug.Log("Reset position: " + transform.position);
     }
 
     public void StartTurn()
     {
         moveCount = 0;
-        RequestDecision(); // 행동 요청
+        RequestDecision();
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        // 에이전트의 현재 위치 관찰
+        Debug.Log("Collecting observations...");
+
+        // 현재 에이전트의 위치 관찰
         sensor.AddObservation(transform.position.x);
         sensor.AddObservation(transform.position.z);
 
-        // 주변 타일 상태 관찰 (총 8개 방향)
-        for (int x = -1; x <= 1; x++)
+        // 주변 타일 상태 관찰 (10x10 타일 상태)
+        for (int x = 0; x < 10; x++)
         {
-            for (int z = -1; z <= 1; z++)
+            for (int z = 0; z < 10; z++)
             {
-                if (x == 0 && z == 0) continue; // 자기 자신 위치는 제외
-                Vector3 neighborPosition = transform.position + new Vector3(x, 0, z);
-                bool isTileDestroyed = gameManager.IsTileDestroyed(neighborPosition);
-                sensor.AddObservation(isTileDestroyed ? 0f : 1f); // 타일 상태 관찰
-                bool isPlayerOnTile = gameManager.IsPlayerOnTile(neighborPosition);
-                sensor.AddObservation(isPlayerOnTile ? 1f : 0f); // 플레이어 존재 여부
+                Vector3 position = new Vector3(x - 4.5f, 0, z - 4.5f);
+                RaycastHit hit;
+
+                // Raycast로 타일이 있는지 확인
+                if (Physics.Raycast(position + Vector3.up * 5f, Vector3.down, out hit, 10f))
+                {
+                    // 히트된 오브젝트의 태그가 "tile"인지 확인
+                    if (hit.collider != null && hit.collider.CompareTag("tile"))
+                    {
+                        bool isTileDestroyed = gameManager.IsTileDestroyed(position);
+                        sensor.AddObservation(isTileDestroyed ? 0f : 1f);
+
+                        bool isPlayerOnTile = gameManager.IsPlayerOnTile(position);
+                        sensor.AddObservation(isPlayerOnTile ? 1f : 0f);
+                    }
+                    else
+                    {
+                        // 타일이 아니면 해당 위치는 0으로 간주 (없음)
+                        sensor.AddObservation(0f);
+                        sensor.AddObservation(0f);
+                    }
+                }
+                else
+                {
+                    // Raycast 결과가 없을 경우 (타일이 없을 때) 기본값을 추가
+                    sensor.AddObservation(0f);
+                    sensor.AddObservation(0f);
+                }
             }
         }
     }
 
     public override void OnActionReceived(ActionBuffers actions)
     {
-        if (moveCount >= 2) return; // 이미 2번 이동했다면 행동 불가
+        int moveX = actions.DiscreteActions[0] - 1;
+        int moveZ = actions.DiscreteActions[1] - 1;
+        int destroyActionX = actions.DiscreteActions[2] - 1;
+        int destroyActionZ = actions.DiscreteActions[3] - 1;
 
-        int moveX = actions.DiscreteActions[0] - 1; // -1, 0, 1
-        int moveZ = actions.DiscreteActions[1] - 1; // -1, 0, 1
-        int destroyAction = actions.DiscreteActions.Length > 2 ? actions.DiscreteActions[2] : 0;
+        bool validMoveAttempted = false;
+        bool validDestroyAttempted = false;
 
-        Vector3 moveDirection = new Vector3(moveX, 0, moveZ);
-        Vector3 targetPosition = transform.position + moveDirection;
-
-        if (moveCount < 2 && IsValidMove(targetPosition))
+        // 이동 시도
+        if (moveCount < 2)
         {
-            transform.position = targetPosition;
-            moveCount++;
-            AddReward(0.1f); // 이동 성공 시 보상
-            Debug.Log("Moved to: " + targetPosition);
-        }
-        else if (!IsValidMove(targetPosition))
-        {
-            AddReward(-0.5f); // 잘못된 이동 시 페널티
-            Debug.Log("Invalid move attempted.");
-        }
-
-        // 타일 파괴 행동
-        if (moveCount >= 2 && destroyAction == 1)
-        {
-            Vector3 destroyPosition = transform.position + moveDirection;
-            if (IsValidDestroy(destroyPosition))
+            validMoveAttempted = TryMove(moveX, moveZ);
+            if (validMoveAttempted)
             {
-                InstantiateMeteor(destroyPosition);
-                AddReward(1.0f); // 타일 파괴 성공 시 보상
-                Debug.Log("Destroyed tile at: " + destroyPosition);
-                gameManager.EndTurn(); // 턴 종료
+                moveCount++;
+                return; // 올바른 이동이면 다음 행동 대기
             }
             else
             {
-                AddReward(-0.5f); // 파괴 불가능한 타일 선택 시 페널티
-                Debug.Log("Invalid destroy attempted.");
+                AddReward(-0.2f); // 잘못된 이동 시 페널티
+                RequestDecision(); // 다시 행동 요청
+                return;
             }
+        }
+
+        // 타일 파괴 시도
+        if (moveCount >= 2)
+        {
+            validDestroyAttempted = TryDestroyTile(destroyActionX, destroyActionZ);
+            if (validDestroyAttempted)
+            {
+                moveCount = 0;
+                gameManager.EndTurn(); // 올바른 타일 파괴 후 턴 종료
+            }
+            else
+            {
+                AddReward(-0.2f); // 잘못된 파괴 시 페널티
+                RequestDecision(); // 다시 행동 요청
+            }
+        }
+    }
+
+
+    private bool TryMove(int moveX, int moveZ)
+    {
+        Vector3 moveDirection = new Vector3(moveX, 0, moveZ);
+        Vector3 moveTargetPosition = transform.position + moveDirection;
+
+        if (IsValidMove(moveTargetPosition))
+        {
+            transform.position = moveTargetPosition;
+            AddReward(0.5f);
+            Debug.Log("Moved to: " + moveTargetPosition);
+            return true;
+        }
+        else
+        {
+            AddReward(-0.2f);
+            Debug.Log("Invalid move attempted.");
+            return false;
+        }
+    }
+
+    private bool TryDestroyTile(int destroyX, int destroyZ)
+    {
+        Vector3 destroyPosition = transform.position + new Vector3(destroyX, 0, destroyZ);
+
+        if (IsValidDestroy(destroyPosition))
+        {
+            DestroyTile(destroyPosition);
+            AddReward(0.5f);
+            Debug.Log("Destroyed tile at: " + destroyPosition);
+            return true;
+        }
+        else
+        {
+            AddReward(-0.2f);
+            Debug.Log("Invalid destroy attempted.");
+            return false;
         }
     }
 
@@ -130,12 +189,7 @@ public class PlayerAgent : Agent
         {
             if (hit.collider != null && hit.collider.CompareTag("tile"))
             {
-                Debug.Log("Valid tile detected at: " + position); // 디버그 로그로 타일 감지 확인
                 return hit.collider.gameObject.activeSelf && !gameManager.IsPlayerOnTile(position);
-            }
-            else
-            {
-                Debug.Log("No valid tile detected at: " + position); // 타일이 없을 때 로그
             }
         }
         return false;
@@ -146,31 +200,24 @@ public class PlayerAgent : Agent
         RaycastHit hit;
         if (Physics.Raycast(position + Vector3.up, Vector3.down, out hit, 2.0f))
         {
-            return hit.collider != null && hit.collider.CompareTag("tile") &&
-                   hit.collider.gameObject.activeSelf && !gameManager.IsPlayerOnTile(position);
+            if (hit.collider != null && hit.collider.CompareTag("tile"))
+            {
+                return hit.collider.gameObject.activeSelf && !gameManager.IsPlayerOnTile(position);
+            }
         }
         return false;
     }
 
-    private void InstantiateMeteor(Vector3 position)
+    private void DestroyTile(Vector3 position)
     {
-        if (meteorPrefab != null)
+        RaycastHit hit;
+        if (Physics.Raycast(position + Vector3.up, Vector3.down, out hit, 2.0f))
         {
-            Vector3 vfxPosition = new Vector3(position.x, position.y + 1, position.z);
-            GameObject meteor = Instantiate(meteorPrefab, vfxPosition, Quaternion.identity);
-            RaycastHit hit;
-            if (Physics.Raycast(vfxPosition, Vector3.down, out hit, 2.0f))
+            if (hit.collider != null && hit.collider.CompareTag("tile"))
             {
-                if (hit.collider != null && hit.collider.CompareTag("tile"))
-                {
-                    hit.collider.gameObject.SetActive(false); // 타일 비활성화
-                    Destroy(meteor, 2.0f); // 메테오 제거
-                }
+                hit.collider.gameObject.SetActive(false);
+                Debug.Log("Tile destroyed at: " + position);
             }
-        }
-        else
-        {
-            Debug.LogWarning("Meteor prefab is not assigned in the Inspector.");
         }
     }
 }

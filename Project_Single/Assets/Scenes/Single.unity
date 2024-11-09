@@ -12049,9 +12049,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 20000
-  meteorPrefab: {fileID: 7967090441752921618, guid: 8bfcf10f0f2f84d4bbf92336304117f6,
-    type: 3}
+  MaxStep: 100000000
 --- !u!114 &1379166799269639415
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12065,12 +12063,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 18
+    VectorObservationSize: 202
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0400000002000000
-    VectorActionSize: 0400000002000000
+      BranchSizes: 03000000030000000300000003000000
+    VectorActionSize: 03000000030000000300000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -12398,9 +12396,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 20000
-  meteorPrefab: {fileID: 7967090441752921618, guid: 8bfcf10f0f2f84d4bbf92336304117f6,
-    type: 3}
+  MaxStep: 100000000
 --- !u!114 &3366105578007782733
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12414,12 +12410,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 18
+    VectorObservationSize: 202
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0400000002000000
-    VectorActionSize: 0400000002000000
+      BranchSizes: 03000000030000000300000003000000
+    VectorActionSize: 03000000030000000300000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -12459,9 +12455,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 20000
-  meteorPrefab: {fileID: 7967090441752921618, guid: 8bfcf10f0f2f84d4bbf92336304117f6,
-    type: 3}
+  MaxStep: 100000000
 --- !u!114 &5611180631180564083
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12475,12 +12469,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 18
+    VectorObservationSize: 202
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0400000002000000
-    VectorActionSize: 0400000002000000
+      BranchSizes: 03000000030000000300000003000000
+    VectorActionSize: 03000000030000000300000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -12520,9 +12514,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 20000
-  meteorPrefab: {fileID: 7967090441752921618, guid: 8bfcf10f0f2f84d4bbf92336304117f6,
-    type: 3}
+  MaxStep: 100000000
 --- !u!114 &5708366649133363361
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12536,12 +12528,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 18
+    VectorObservationSize: 202
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0400000002000000
-    VectorActionSize: 0400000002000000
+      BranchSizes: 03000000030000000300000003000000
+    VectorActionSize: 03000000030000000300000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1

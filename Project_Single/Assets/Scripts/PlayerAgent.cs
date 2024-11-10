@@ -7,18 +7,30 @@ public class PlayerAgent : Agent
 {
     private GameManager gameManager;
     private int moveCount;
+    private float cumulativePenalty; // 누적 패널티 점수
+    private const float penaltyThreshold = -5f; // 탈락 임계치
 
     public override void Initialize()
     {
         gameManager = FindObjectOfType<GameManager>();
         moveCount = 0;
+        cumulativePenalty = 0f;
     }
 
     public override void OnEpisodeBegin()
     {
+        if (gameManager == null)
+        {
+            gameManager = FindObjectOfType<GameManager>();
+        }
+
+        gameManager.RestartGameCycle();
         moveCount = 0;
         SetInitialPosition();
         Debug.Log("OnEpisodeBegin: " + transform.position);
+
+        // 초기화 후 턴 시작
+        StartTurn();
     }
 
     private void SetInitialPosition()
@@ -44,6 +56,7 @@ public class PlayerAgent : Agent
     {
         SetInitialPosition();
         moveCount = 0;
+        cumulativePenalty = 0f;
         Debug.Log("Reset position: " + transform.position);
     }
 
@@ -105,43 +118,32 @@ public class PlayerAgent : Agent
         int destroyActionX = actions.DiscreteActions[2] - 1;
         int destroyActionZ = actions.DiscreteActions[3] - 1;
 
-        bool validMoveAttempted = false;
-        bool validDestroyAttempted = false;
-
-        // 이동 시도
         if (moveCount < 2)
         {
-            validMoveAttempted = TryMove(moveX, moveZ);
-            if (validMoveAttempted)
+            if (TryMove(moveX, moveZ))
             {
                 moveCount++;
-                return; // 올바른 이동이면 다음 행동 대기
-            }
-            else
-            {
-                AddReward(-0.2f); // 잘못된 이동 시 페널티
-                RequestDecision(); // 다시 행동 요청
+                RequestDecision(); // 움직임 후 환경 관찰 및 다음 행동 요청
                 return;
             }
         }
 
-        // 타일 파괴 시도
         if (moveCount >= 2)
         {
-            validDestroyAttempted = TryDestroyTile(destroyActionX, destroyActionZ);
-            if (validDestroyAttempted)
+            if (TryDestroyTile(destroyActionX, destroyActionZ))
             {
                 moveCount = 0;
-                gameManager.EndTurn(); // 올바른 타일 파괴 후 턴 종료
-            }
-            else
-            {
-                AddReward(-0.2f); // 잘못된 파괴 시 페널티
-                RequestDecision(); // 다시 행동 요청
+                gameManager.EndTurn();
             }
         }
+        // 패널티가 일정 임계치에 도달하면 탈락 처리
+        if (cumulativePenalty <= penaltyThreshold)
+        {
+            Debug.Log("Cumulative penalty exceeded threshold. Agent eliminated.");
+            gameObject.SetActive(false); // 에이전트 비활성화 (탈락)
+            gameManager.CheckGameOver();
+        }
     }
-
 
     private bool TryMove(int moveX, int moveZ)
     {
@@ -157,8 +159,11 @@ public class PlayerAgent : Agent
         }
         else
         {
-            AddReward(-0.2f);
-            Debug.Log("Invalid move attempted.");
+            float penalty = -0.5f;
+            AddReward(penalty);
+            cumulativePenalty += penalty; // 누적 패널티 증가
+            Debug.Log("Invalid move attempted. Cumulative penalty: " + cumulativePenalty);
+            gameManager.EndTurn();
             return false;
         }
     }
@@ -176,8 +181,11 @@ public class PlayerAgent : Agent
         }
         else
         {
-            AddReward(-0.2f);
-            Debug.Log("Invalid destroy attempted.");
+            float penalty = -0.5f;
+            AddReward(penalty);
+            cumulativePenalty += penalty; // 누적 패널티 증가
+            Debug.Log("Invalid destroy attempted. Cumulative penalty: " + cumulativePenalty);
+            gameManager.EndTurn();
             return false;
         }
     }

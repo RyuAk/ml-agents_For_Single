@@ -8,7 +8,7 @@ public class PlayerAgent : Agent
     private GameManager gameManager;
     private int moveCount;
     private float cumulativePenalty; // 누적 패널티 점수
-    private const float penaltyThreshold = -5f; // 탈락 임계치
+    private const float penaltyThreshold = -3f; // 탈락 임계치
 
     public override void Initialize()
     {
@@ -153,13 +153,13 @@ public class PlayerAgent : Agent
         if (IsValidMove(moveTargetPosition))
         {
             transform.position = moveTargetPosition;
-            AddReward(0.5f);
+            AddReward(3f);
             Debug.Log("Moved to: " + moveTargetPosition);
             return true;
         }
         else
         {
-            float penalty = -0.5f;
+            float penalty = -1f;
             AddReward(penalty);
             cumulativePenalty += penalty; // 누적 패널티 증가
             Debug.Log("Invalid move attempted. Cumulative penalty: " + cumulativePenalty);
@@ -175,13 +175,13 @@ public class PlayerAgent : Agent
         if (IsValidDestroy(destroyPosition))
         {
             DestroyTile(destroyPosition);
-            AddReward(0.5f);
+            AddReward(3f);
             Debug.Log("Destroyed tile at: " + destroyPosition);
             return true;
         }
         else
         {
-            float penalty = -0.5f;
+            float penalty = -1f;
             AddReward(penalty);
             cumulativePenalty += penalty; // 누적 패널티 증가
             Debug.Log("Invalid destroy attempted. Cumulative penalty: " + cumulativePenalty);

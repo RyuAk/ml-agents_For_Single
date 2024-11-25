@@ -7,14 +7,14 @@ public class PlayerAgent : Agent
 {
     private GameManager gameManager;
     private int moveCount;
-    private float cumulativePenalty; // 누적 패널티 점수
+    //private float cumulativePenalty; // 누적 패널티 점수
     private const float penaltyThreshold = -3f; // 탈락 임계치
 
     public override void Initialize()
     {
         gameManager = FindObjectOfType<GameManager>();
         moveCount = 0;
-        cumulativePenalty = 0f;
+        //cumulativePenalty = 0f;
     }
 
     public override void OnEpisodeBegin()
@@ -56,7 +56,7 @@ public class PlayerAgent : Agent
     {
         SetInitialPosition();
         moveCount = 0;
-        cumulativePenalty = 0f;
+        //cumulativePenalty = 0f;
         Debug.Log("Reset position: " + transform.position);
     }
 
@@ -68,48 +68,50 @@ public class PlayerAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        Debug.Log("Collecting observations...");
-
         // 현재 에이전트의 위치 관찰
-        sensor.AddObservation(transform.position.x);
-        sensor.AddObservation(transform.position.z);
+        sensor.AddObservation(transform.position.x / 10f); // 보드 크기 기준 정규화
+        sensor.AddObservation(transform.position.z / 10f);
 
-        // 주변 타일 상태 관찰 (10x10 타일 상태)
-        for (int x = 0; x < 10; x++)
+        // 주변 1~2칸 관찰 (3x3 또는 5x5 영역)
+        for (int x = -2; x <= 2; x++) // 주변 2칸까지
         {
-            for (int z = 0; z < 10; z++)
+            for (int z = -2; z <= 2; z++)
             {
-                Vector3 position = new Vector3(x - 4.5f, 0, z - 4.5f);
+                if (x == 0 && z == 0) continue; // 자기 자신 위치 제외
+
+                Vector3 neighborPosition = transform.position + new Vector3(x, 0, z);
                 RaycastHit hit;
 
                 // Raycast로 타일이 있는지 확인
-                if (Physics.Raycast(position + Vector3.up * 5f, Vector3.down, out hit, 10f))
+                if (Physics.Raycast(neighborPosition + Vector3.up * 5f, Vector3.down, out hit, 10f))
                 {
-                    // 히트된 오브젝트의 태그가 "tile"인지 확인
                     if (hit.collider != null && hit.collider.CompareTag("tile"))
                     {
-                        bool isTileDestroyed = gameManager.IsTileDestroyed(position);
-                        sensor.AddObservation(isTileDestroyed ? 0f : 1f);
+                        // 타일 상태 관찰
+                        bool isTileDestroyed = gameManager.IsTileDestroyed(neighborPosition);
+                        sensor.AddObservation(isTileDestroyed ? 0f : 1f); // 타일 상태 (0: 파괴됨, 1: 활성화)
 
-                        bool isPlayerOnTile = gameManager.IsPlayerOnTile(position);
-                        sensor.AddObservation(isPlayerOnTile ? 1f : 0f);
+                        // 플레이어 위치 여부 관찰
+                        bool isPlayerOnTile = gameManager.IsPlayerOnTile(neighborPosition);
+                        sensor.AddObservation(isPlayerOnTile ? 1f : 0f); // 1: 플레이어 있음, 0: 없음
                     }
                     else
                     {
-                        // 타일이 아니면 해당 위치는 0으로 간주 (없음)
-                        sensor.AddObservation(0f);
-                        sensor.AddObservation(0f);
+                        // 타일이 없는 위치로 간주
+                        sensor.AddObservation(0f); // 타일 상태 없음
+                        sensor.AddObservation(0f); // 플레이어 없음
                     }
                 }
                 else
                 {
-                    // Raycast 결과가 없을 경우 (타일이 없을 때) 기본값을 추가
-                    sensor.AddObservation(0f);
-                    sensor.AddObservation(0f);
+                    // Raycast 결과가 없는 경우 기본값
+                    sensor.AddObservation(0f); // 타일 상태 없음
+                    sensor.AddObservation(0f); // 플레이어 없음
                 }
             }
         }
     }
+
 
     public override void OnActionReceived(ActionBuffers actions)
     {
@@ -118,16 +120,22 @@ public class PlayerAgent : Agent
         int destroyActionX = actions.DiscreteActions[2] - 1;
         int destroyActionZ = actions.DiscreteActions[3] - 1;
 
+        // 움직임 처리
         if (moveCount < 2)
         {
             if (TryMove(moveX, moveZ))
             {
                 moveCount++;
-                RequestDecision(); // 움직임 후 환경 관찰 및 다음 행동 요청
+            }
+            else
+            {
+                // 유효하지 않은 움직임: 행동 재요청
+                RequestDecision();
                 return;
             }
         }
 
+        // 타일 파괴 처리
         if (moveCount >= 2)
         {
             if (TryDestroyTile(destroyActionX, destroyActionZ))
@@ -135,13 +143,11 @@ public class PlayerAgent : Agent
                 moveCount = 0;
                 gameManager.EndTurn();
             }
-        }
-        // 패널티가 일정 임계치에 도달하면 탈락 처리
-        if (cumulativePenalty <= penaltyThreshold)
-        {
-            Debug.Log("Cumulative penalty exceeded threshold. Agent eliminated.");
-            gameObject.SetActive(false); // 에이전트 비활성화 (탈락)
-            gameManager.CheckGameOver();
+            else
+            {
+                // 유효하지 않은 타일 파괴: 행동 재요청
+                RequestDecision();
+            }
         }
     }
 
@@ -153,17 +159,13 @@ public class PlayerAgent : Agent
         if (IsValidMove(moveTargetPosition))
         {
             transform.position = moveTargetPosition;
-            AddReward(3f);
+            AddReward(1f); // 이동 성공 보상
             Debug.Log("Moved to: " + moveTargetPosition);
             return true;
         }
         else
         {
-            float penalty = -1f;
-            AddReward(penalty);
-            cumulativePenalty += penalty; // 누적 패널티 증가
-            Debug.Log("Invalid move attempted. Cumulative penalty: " + cumulativePenalty);
-            gameManager.EndTurn();
+            Debug.Log("Invalid move attempted.");
             return false;
         }
     }
@@ -175,20 +177,17 @@ public class PlayerAgent : Agent
         if (IsValidDestroy(destroyPosition))
         {
             DestroyTile(destroyPosition);
-            AddReward(3f);
+            AddReward(1f); // 타일 파괴 성공 보상
             Debug.Log("Destroyed tile at: " + destroyPosition);
             return true;
         }
         else
         {
-            float penalty = -1f;
-            AddReward(penalty);
-            cumulativePenalty += penalty; // 누적 패널티 증가
-            Debug.Log("Invalid destroy attempted. Cumulative penalty: " + cumulativePenalty);
-            gameManager.EndTurn();
+            Debug.Log("Invalid destroy attempted.");
             return false;
         }
     }
+
 
     private bool IsValidMove(Vector3 position)
     {

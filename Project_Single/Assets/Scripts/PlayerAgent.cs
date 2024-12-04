@@ -7,7 +7,7 @@ public class PlayerAgent : Agent
 {
     private GameManager gameManager;
     private int moveCount;
-    //private float cumulativePenalty; // 누적 패널티 점수
+    private float cumulativePenalty; // 누적 패널티 점수
     private const float penaltyThreshold = -3f; // 탈락 임계치
 
     public override void Initialize()
@@ -68,49 +68,48 @@ public class PlayerAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
+        Debug.Log("Collecting observations...");
+
         // 현재 에이전트의 위치 관찰
-        sensor.AddObservation(transform.position.x / 10f); // 보드 크기 기준 정규화
-        sensor.AddObservation(transform.position.z / 10f);
+        sensor.AddObservation(transform.position.x);
+        sensor.AddObservation(transform.position.z);
 
-        // 주변 1~2칸 관찰 (3x3 또는 5x5 영역)
-        for (int x = -2; x <= 2; x++) // 주변 2칸까지
+        // 주변 타일 상태 관찰 (10x10 타일 상태)
+        for (int x = 0; x < 10; x++)
         {
-            for (int z = -2; z <= 2; z++)
+            for (int z = 0; z < 10; z++)
             {
-                if (x == 0 && z == 0) continue; // 자기 자신 위치 제외
-
-                Vector3 neighborPosition = transform.position + new Vector3(x, 0, z);
+                Vector3 position = new Vector3(x - 4.5f, 0, z - 4.5f);
                 RaycastHit hit;
 
                 // Raycast로 타일이 있는지 확인
-                if (Physics.Raycast(neighborPosition + Vector3.up * 5f, Vector3.down, out hit, 10f))
+                if (Physics.Raycast(position + Vector3.up * 5f, Vector3.down, out hit, 10f))
                 {
                     if (hit.collider != null && hit.collider.CompareTag("tile"))
                     {
-                        // 타일 상태 관찰
-                        bool isTileDestroyed = gameManager.IsTileDestroyed(neighborPosition);
-                        sensor.AddObservation(isTileDestroyed ? 0f : 1f); // 타일 상태 (0: 파괴됨, 1: 활성화)
+                        bool isTileDestroyed = gameManager.IsTileDestroyed(position);
+                        sensor.AddObservation(isTileDestroyed ? 0f : 1f);
 
-                        // 플레이어 위치 여부 관찰
-                        bool isPlayerOnTile = gameManager.IsPlayerOnTile(neighborPosition);
-                        sensor.AddObservation(isPlayerOnTile ? 1f : 0f); // 1: 플레이어 있음, 0: 없음
+                        bool isPlayerOnTile = gameManager.IsPlayerOnTile(position);
+                        sensor.AddObservation(isPlayerOnTile ? 1f : 0f);
                     }
                     else
                     {
-                        // 타일이 없는 위치로 간주
-                        sensor.AddObservation(0f); // 타일 상태 없음
+                        // 기본값 추가 (채워지지 않은 공간을 처리)
+                        sensor.AddObservation(0f); // 타일 없음
                         sensor.AddObservation(0f); // 플레이어 없음
                     }
                 }
                 else
                 {
-                    // Raycast 결과가 없는 경우 기본값
-                    sensor.AddObservation(0f); // 타일 상태 없음
-                    sensor.AddObservation(0f); // 플레이어 없음
+                    // 기본값 추가 (채워지지 않은 공간을 처리)
+                    sensor.AddObservation(0f);
+                    sensor.AddObservation(0f);
                 }
             }
         }
     }
+
 
 
     public override void OnActionReceived(ActionBuffers actions)
@@ -120,18 +119,20 @@ public class PlayerAgent : Agent
         int destroyActionX = actions.DiscreteActions[2] - 1;
         int destroyActionZ = actions.DiscreteActions[3] - 1;
 
-        // 움직임 처리
+        bool validAction = false;
+
+        // 이동 처리
         if (moveCount < 2)
         {
             if (TryMove(moveX, moveZ))
             {
                 moveCount++;
+                validAction = true;
             }
             else
             {
-                // 유효하지 않은 움직임: 행동 재요청
-                RequestDecision();
-                return;
+                AddPenaltyAndRequest("Invalid move.");
+                return; // 잘못된 행동 후 루프 방지
             }
         }
 
@@ -141,14 +142,44 @@ public class PlayerAgent : Agent
             if (TryDestroyTile(destroyActionX, destroyActionZ))
             {
                 moveCount = 0;
+                validAction = true;
                 gameManager.EndTurn();
+                return;
             }
             else
             {
-                // 유효하지 않은 타일 파괴: 행동 재요청
-                RequestDecision();
+                AddPenaltyAndRequest("Invalid destroy.");
+                return;
             }
         }
+
+        // 유효한 행동이 없으면 재요청
+        if (!validAction)
+        {
+            AddPenaltyAndRequest("No valid action.");
+        }
+    }
+
+    // 패널티와 행동 재요청
+    private void AddPenaltyAndRequest(string message)
+    {
+        AddReward(-0.5f); // 패널티 추가
+        Debug.Log(message + " Adding penalty and scheduling new action request.");
+
+        // 일정 시간 후에 행동 재요청
+        Invoke(nameof(DelayedRequestDecision), 0.5f);
+    }
+
+    private void DelayedRequestDecision()
+    {
+        if (!gameObject.activeSelf)
+        {
+            Debug.Log("Agent is inactive. Skipping decision request.");
+            return;
+        }
+
+        Debug.Log("Requesting decision after delay.");
+        RequestDecision();
     }
 
     private bool TryMove(int moveX, int moveZ)
@@ -196,9 +227,11 @@ public class PlayerAgent : Agent
         {
             if (hit.collider != null && hit.collider.CompareTag("tile"))
             {
+                Debug.Log($"Tile at {position} is valid: {hit.collider.gameObject.activeSelf}");
                 return hit.collider.gameObject.activeSelf && !gameManager.IsPlayerOnTile(position);
             }
         }
+        Debug.Log($"Tile at {position} is invalid.");
         return false;
     }
 

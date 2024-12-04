@@ -41,18 +41,16 @@ public class GameManager : MonoBehaviour
     {
         if (gameOver) return;
 
-        // 현재 턴의 플레이어 가져오기
         PlayerAgent currentPlayer = players[currentPlayerIndex];
 
-        // 플레이어가 비활성화되어 있으면 다음 플레이어로 넘어감
         if (currentPlayer == null || !currentPlayer.gameObject.activeSelf)
         {
+            Debug.Log("Skipping inactive player. Moving to next player.");
             MoveToNextPlayer();
             return;
         }
 
-        // 플레이어의 턴 시작
-        Debug.Log("Current player turn: " + currentPlayer.gameObject.name);
+        Debug.Log("Starting turn for player: " + currentPlayer.gameObject.name);
         currentPlayer.StartTurn();
     }
 
@@ -66,14 +64,17 @@ public class GameManager : MonoBehaviour
     {
         currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
 
-        // 남아 있는 플레이어가 한 명인지 확인
-        if (CheckGameOver()) return;
-
-        // 비활성화된 플레이어는 건너뜀
         while (players[currentPlayerIndex] == null || !players[currentPlayerIndex].gameObject.activeSelf)
         {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
+
+            if (CheckGameOver())
+            {
+                return; // 게임 종료
+            }
         }
+
+        Debug.Log("Next player: " + currentPlayerIndex);
     }
 
     public bool IsTileDestroyed(Vector3 position)
